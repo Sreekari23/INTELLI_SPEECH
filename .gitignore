@@ -1,0 +1,40 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Speech Data & Audio Archives (Prevent git bloat)
+data/raw/
+data/processed/
+*.wav
+*.mp3
+*.flac
+*.sph
+*.tar.gz
+*.zip
+
+# Model Checkpoints & Weights
+models/checkpoints/
+*.pt
+*.pth
+*.bin
+*.onnx
+*.engine
+*.rknn
+
+# Telemetry, Logs & Jupyter
+logs/
+*.log
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

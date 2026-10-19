@@ -1,0 +1,25 @@
+# Project TIDE: Speaker-Independent Stratification Specification
+# Research Integrity Rule: Train ∩ Val ∩ Test = ∅
+
+test_speakers:
+  - "M01"   # Severe Dysarthria
+  - "F04"   # Moderate Dysarthria
+  - "M05"   # Mild Dysarthria
+  - "MC01"  # Control Male
+  - "FC01"  # Control Female
+
+validation_speakers:
+  # Strictly reserved for ROC Confidence Threshold (tau_conf) calibration
+  # and Nelder-Mead linear fusion weight (alpha, beta, gamma) optimization.
+  - "F01"   # Severe Dysarthria
+  - "M04"   # Moderate Dysarthria
+  - "MC02"  # Control Male
+  - "FC02"  # Control Female
+
+train_speakers:
+  # Primary baseline training and acoustic CTC alignment partition
+  - "M02"   # Severe Dysarthria
+  - "F03"   # Moderate Dysarthria
+  - "MC03"  # Control Male
+  - "MC04"  # Control Male
+  - "FC03"  # Control Female

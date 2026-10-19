@@ -1,0 +1,21 @@
+# Project TIDE Audio & Frontend Parameters
+audio:
+  sample_rate: 16000
+  channels: 1
+  sample_width_bytes: 2  # 16-bit signed PCM
+  normalize_peak: true
+
+features:
+  n_mels: 80
+  n_fft: 400            # 25 ms window length at 16 kHz
+  hop_length: 160        # 10 ms hop size at 16 kHz
+  f_min: 0
+  f_max: 8000
+  power: 2.0
+  log_eps: 1.0e-5
+
+vad:
+  frame_duration_ms: 30       # 480 samples per VAD evaluation window
+  silence_hangover_ms: 900    # Initial target for dysarthric breath pauses (800-1200ms)
+  max_utterance_sec: 10.0     # Buffer ceiling preventing memory overrun
+  threshold: 0.5              # Neural VAD probability threshold

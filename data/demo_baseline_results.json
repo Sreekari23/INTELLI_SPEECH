@@ -1,0 +1,161 @@
+{
+  "benchmark_version": "1.0",
+  "cases": [
+    {
+      "case_id": "CASE_01_CONTROL",
+      "severity": "Control",
+      "filename": "C:\\Users\\tsrsr\\Agents projects\\intelliSpeech\\data\\sample_audio\\control.wav",
+      "reference": "GOOD MORNING HAVE A WONDERFUL DAY",
+      "description": "Healthy non-dysarthric speaker. High acoustic clarity.",
+      "top1_hypothesis": "GOOD MORNING HAVE A WONDERFUL DAY",
+      "faster_whisper_text": "GOOD MORNING HAVE A WONDERFUL DAY",
+      "confidence_score": 0.6924,
+      "confidence_margin": 1.8,
+      "latency_ms": 17983.47,
+      "candidates": [
+        {
+          "rank": 1,
+          "transcript": "GOOD MORNING HAVE A WONDERFUL DAY",
+          "asr_logprob": -0.15
+        },
+        {
+          "rank": 2,
+          "transcript": "GOOD MOANING HAVE A WONDERFUL DAY",
+          "asr_logprob": -1.95
+        },
+        {
+          "rank": 3,
+          "transcript": "GOOD MORNING HAVE A WONDER FULL DAY",
+          "asr_logprob": -2.2
+        },
+        {
+          "rank": 4,
+          "transcript": "GOOD MORNIN HAVE A WONDERFUL DAY",
+          "asr_logprob": -2.6
+        },
+        {
+          "rank": 5,
+          "transcript": "GOOD MORNING OF A WONDERFUL DAY",
+          "asr_logprob": -2.9
+        }
+      ]
+    },
+    {
+      "case_id": "CASE_02_MILD",
+      "severity": "Mild",
+      "filename": "C:\\Users\\tsrsr\\Agents projects\\intelliSpeech\\data\\sample_audio\\mild.wav",
+      "reference": "PLEASE OPEN THE BEDROOM WINDOW",
+      "description": "Mild dysarthria with slight articulatory boundary softening.",
+      "top1_hypothesis": "PLEASE OPEN THE BEDROOM WINDOW",
+      "faster_whisper_text": "PLEASE OPEN THE BEDROOM WINDOW",
+      "confidence_score": 0.3805,
+      "confidence_margin": 0.4,
+      "latency_ms": 16675.89,
+      "candidates": [
+        {
+          "rank": 1,
+          "transcript": "PLEASE OPEN THE BEDROOM WINDOW",
+          "asr_logprob": -0.45
+        },
+        {
+          "rank": 2,
+          "transcript": "PLEASE HOPING THE BEDROOM WINDOW",
+          "asr_logprob": -0.85
+        },
+        {
+          "rank": 3,
+          "transcript": "PLEASE OPEN A BEDROOM WINDOW",
+          "asr_logprob": -1.25
+        },
+        {
+          "rank": 4,
+          "transcript": "PLEASE OPEN THE BED ROOM WINDOW",
+          "asr_logprob": -1.6
+        },
+        {
+          "rank": 5,
+          "transcript": "PLEASE OPEN DE BEDROOM WINDOW",
+          "asr_logprob": -2.1
+        }
+      ]
+    },
+    {
+      "case_id": "CASE_03_MODERATE",
+      "severity": "Moderate",
+      "filename": "C:\\Users\\tsrsr\\Agents projects\\intelliSpeech\\data\\sample_audio\\moderate.wav",
+      "reference": "I WOULD LIKE A GLASS OF COLD WATER",
+      "description": "Moderate dysarthria. Consonant omission: 'COLD' articulated as 'COAL'.",
+      "top1_hypothesis": "I WOULD LIKE A GLASS OF COAL WATER",
+      "faster_whisper_text": "I WOULD LIKE A GLASS OF COAL WATER",
+      "confidence_score": 0.3346,
+      "confidence_margin": 0.16,
+      "latency_ms": 16371.88,
+      "candidates": [
+        {
+          "rank": 1,
+          "transcript": "I WOULD LIKE A GLASS OF COAL WATER",
+          "asr_logprob": -0.82
+        },
+        {
+          "rank": 2,
+          "transcript": "I WOULD LIKE A GLASS OF COLD WATER",
+          "asr_logprob": -0.98
+        },
+        {
+          "rank": 3,
+          "transcript": "I WOULD LIKE A GLASS OF CALL WATER",
+          "asr_logprob": -1.45
+        },
+        {
+          "rank": 4,
+          "transcript": "I WOULD LIKE A GLASS OF CORE WATER",
+          "asr_logprob": -1.9
+        },
+        {
+          "rank": 5,
+          "transcript": "I WOOD LIKE A GLASS OF COAL WATER",
+          "asr_logprob": -2.15
+        }
+      ]
+    },
+    {
+      "case_id": "CASE_04_SEVERE",
+      "severity": "Severe",
+      "filename": "C:\\Users\\tsrsr\\Agents projects\\intelliSpeech\\data\\sample_audio\\severe.wav",
+      "reference": "THE QUICK DOG JUMPED OVER THE FENCE",
+      "description": "Severe dysarthria. Vowel centralization: 'DOG' distorted toward 'DAG'.",
+      "top1_hypothesis": "THE QUICK DAG JUMPED OVER THE FENCE",
+      "faster_whisper_text": "THE QUICK DAG JUMPED OVER THE FENCE",
+      "confidence_score": 0.3076,
+      "confidence_margin": 0.13,
+      "latency_ms": 16684.67,
+      "candidates": [
+        {
+          "rank": 1,
+          "transcript": "THE QUICK DAG JUMPED OVER THE FENCE",
+          "asr_logprob": -1.15
+        },
+        {
+          "rank": 2,
+          "transcript": "THE QUICK DOG JUMPED OVER THE FENCE",
+          "asr_logprob": -1.28
+        },
+        {
+          "rank": 3,
+          "transcript": "THE QUICK DUG JUMPED OVER THE FENCE",
+          "asr_logprob": -1.65
+        },
+        {
+          "rank": 4,
+          "transcript": "THE QUICK DOCK JUMPED OVER THE FENCE",
+          "asr_logprob": -1.95
+        },
+        {
+          "rank": 5,
+          "transcript": "THE QUICK DARK JUMPED OVER THE FENCE",
+          "asr_logprob": -2.3
+        }
+      ]
+    }
+  ]
+}
