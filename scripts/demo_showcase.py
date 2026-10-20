@@ -9,8 +9,9 @@ Demonstrates:
    - Hard Path: If confidence <= threshold, dispatches Top-5 candidates to acoustic & semantic heads.
 3. Hard Path Rescoring:
    - Semantic Score: Evaluates sentence plausibility using sentence-transformers (all-MiniLM-L6-v2).
-   - Acoustic / Phonetic Score: Maps candidates to CMUDict phonemes via g2p_en and measures
-     Levenshtein alignment against the Top-1 acoustic anchor.
+   - Acoustic / Phonetic Score: Neural inference via trained Acoustic1DCNN (from checkpoints/best_1dcnn.pth)
+     computing length-normalized CTC alignment loss for each candidate transcript against the 80-channel
+     Log-Mel spectrogram extracted in RAM.
    - Multi-Signal Linear Fusion:
      Final_Score = (0.4 * ASR) + (0.3 * Acoustic) + (0.3 * Semantic)
 4. Colored, high-impact terminal presentation for faculty review and demonstrations.
@@ -21,13 +22,23 @@ import sys
 import json
 import argparse
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 import numpy as np
+import soundfile as sf
+import torch
+import torch.nn.functional as F
 
 # Ensure repository root is on sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+
+from src.models.acoustic_1dcnn import (
+    Acoustic1DCNN,
+    PhonemeTokenizer,
+    LogMelSpectrogramTransform,
+    NUM_PHONEMES,
+)
 
 # Enforce UTF-8 stdout on Windows console
 if sys.platform == "win32":
@@ -37,7 +48,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-# Optional rich formatting / ANSI colors
+# ANSI colors
 CYAN = "\033[96m"
 GREEN = "\033[92m"
 YELLOW = "\033[93m"
@@ -49,60 +60,140 @@ DIM = "\033[2m"
 RESET = "\033[0m"
 
 RESULTS_JSON_PATH = REPO_ROOT / "data" / "demo_baseline_results.json"
+DEFAULT_CHECKPOINT = REPO_ROOT / "checkpoints" / "best_1dcnn.pth"
 
 
 class DualPathShowcase:
-    """Executes the dual-path confidence gate and multi-signal candidate fusion."""
+    """Executes the dual-path confidence gate and neural multi-signal candidate fusion."""
 
-    def __init__(self, confidence_threshold: float = 0.65):
-        """Initializes phonetic, semantic, and fusion engines.
+    def __init__(
+        self,
+        confidence_threshold: float = 0.65,
+        checkpoint_path: Optional[str] = None,
+        device: str = "cpu"
+    ):
+        """Initializes acoustic neural head, semantic LM, and fusion engine.
 
         Args:
             confidence_threshold: Cutoff margin separating Fast Path from Hard Path.
+            checkpoint_path: Path to trained Acoustic1DCNN checkpoint (.pth).
+            device: Compute device ('cpu' or 'cuda').
         """
         self.confidence_threshold = confidence_threshold
+        self.device = torch.device(device)
 
-        print(f"{DIM}[*] Loading G2P phoneme mapping engine (g2p_en)...{RESET}")
-        import nltk
-        try:
-            nltk.download('averaged_perceptron_tagger_eng', quiet=True)
-            nltk.download('averaged_perceptron_tagger', quiet=True)
-            nltk.download('cmudict', quiet=True)
-        except Exception:
-            pass
+        ckpt_file = Path(checkpoint_path) if checkpoint_path else DEFAULT_CHECKPOINT
+        if not ckpt_file.is_absolute():
+            ckpt_file = REPO_ROOT / ckpt_file
 
-        from g2p_en import G2p
-        self.g2p = G2p()
+        print(f"{DIM}[*] Initializing Phoneme Tokenizer & Log-Mel Feature Extractor...{RESET}")
+        self.tokenizer = PhonemeTokenizer()
+        self.mel_extractor = LogMelSpectrogramTransform()
+        self.ctc_loss_fn = torch.nn.CTCLoss(blank=0, reduction="none", zero_infinity=True)
+
+        print(f"{DIM}[*] Loading Neural Acoustic 1D-CNN Checkpoint ({ckpt_file.name})...{RESET}")
+        if not ckpt_file.exists():
+            raise FileNotFoundError(f"Checkpoint not found at: {ckpt_file}")
+
+        # Requirement 2: Load checkpoint on CPU extracting model_state_dict
+        checkpoint = torch.load(str(ckpt_file), map_location=self.device, weights_only=False)
+        self.acoustic_model = Acoustic1DCNN(
+            in_features=80,
+            num_classes=NUM_PHONEMES,
+            hidden_dim=256
+        )
+        self.acoustic_model.load_state_dict(checkpoint["model_state_dict"])
+        self.acoustic_model.to(self.device)
+        self.acoustic_model.eval()
+
+        val_loss = checkpoint.get("val_loss", None)
+        loss_info = f" (Val Loss: {val_loss:.4f})" if val_loss is not None else ""
+        param_count = self.acoustic_model.count_parameters()
+        print(f"{GREEN}[OK] Acoustic 1D-CNN loaded ({param_count:,} params, {self.device.type.upper()}){loss_info}.{RESET}")
 
         print(f"{DIM}[*] Loading Semantic Language Model (all-MiniLM-L6-v2)...{RESET}")
         from sentence_transformers import SentenceTransformer
         self.semantic_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-        print(f"{GREEN}[OK] Reranking heads initialized successfully.{RESET}\n")
+        print(f"{GREEN}[OK] Dual-Path Reranking heads initialized successfully.{RESET}\n")
 
-    def text_to_phonemes(self, text: str) -> List[str]:
-        """Converts text string into CMUDict phonemes list, stripping spaces and punctuation."""
-        raw_phones = self.g2p(text.lower())
-        return [p for p in raw_phones if p.isalnum()]
+    def compute_acoustic_scores(
+        self,
+        audio_path: str,
+        candidates: List[str]
+    ) -> List[Dict[str, Any]]:
+        """Computes neural CTC alignment scores for candidate transcripts against audio in memory.
 
-    def compute_phonetic_score(self, cand_text: str, anchor_text: str) -> float:
-        """Computes normalized phonetic similarity against the ASR anchor using Levenshtein distance."""
-        import Levenshtein
+        1. Extract 80-channel Log-Mel spectrogram (n_fft=400, hop_length=160, n_mels=80) in RAM.
+        2. Run forward pass through Acoustic1DCNN in eval() mode -> (Time, 1, Num_Phonemes).
+        3. For each candidate transcript, convert to CMUDict phoneme IDs via g2p_en.
+        4. Compute CTCLoss(blank=0, reduction='none', zero_infinity=True).
+        5. Convert length-normalized negative CTC loss into normalized [0, 1] acoustic score:
+           S_Acoustic = exp(-(norm_loss - min_norm_loss)).
+        """
+        p = Path(audio_path)
+        if not p.exists():
+            fallback_p = REPO_ROOT / "data" / "sample_audio" / p.name
+            if fallback_p.exists():
+                p = fallback_p
+            else:
+                raise FileNotFoundError(f"Audio file not found at: {audio_path}")
 
-        cand_phones = " ".join(self.text_to_phonemes(cand_text))
-        anchor_phones = " ".join(self.text_to_phonemes(anchor_text))
+        audio_np, sr = sf.read(str(p), dtype="float32")
+        if audio_np.ndim > 1:
+            audio_np = audio_np.mean(axis=1)
 
-        if not cand_phones or not anchor_phones:
-            return 1.0 if cand_phones == anchor_phones else 0.0
+        waveform = torch.from_numpy(audio_np).unsqueeze(0)  # (1, Time)
+        if sr != 16000:
+            import torchaudio.transforms as T
+            waveform = T.Resample(orig_freq=sr, new_freq=16000)(waveform)
 
-        dist = Levenshtein.distance(cand_phones, anchor_phones)
-        max_len = max(len(cand_phones), len(anchor_phones))
-        # Normalized similarity in [0.0, 1.0]
-        similarity = max(0.0, 1.0 - (dist / max_len))
-        return round(float(similarity), 4)
+        waveform = waveform.to(self.device)
+
+        with torch.no_grad():
+            # In-memory 80-channel Log-Mel spectrogram: (1, 80, Time_frames)
+            mel = self.mel_extractor(waveform)
+            # Forward pass through Acoustic1DCNN: (1, Time_frames, Num_Phonemes)
+            logits = self.acoustic_model(mel)
+            # CTCLoss expects log_probs of shape (Time, Batch, Num_Phonemes)
+            log_probs = F.log_softmax(logits, dim=-1).transpose(0, 1)
+
+        t_frames = log_probs.size(0)
+        input_lengths = torch.tensor([t_frames], dtype=torch.long, device=self.device)
+
+        results: List[Dict[str, Any]] = []
+        norm_losses: List[float] = []
+
+        for cand_text in candidates:
+            target_ids = self.tokenizer.encode(cand_text)
+            if not target_ids:
+                loss_val = 999.0
+                target_len = 1
+            else:
+                target_len = len(target_ids)
+                target_tensor = torch.tensor(target_ids, dtype=torch.long, device=self.device).unsqueeze(0)
+                target_lengths = torch.tensor([target_len], dtype=torch.long, device=self.device)
+                loss_val = float(self.ctc_loss_fn(log_probs, target_tensor, input_lengths, target_lengths).item())
+
+            norm_loss = loss_val / max(1, target_len)
+            norm_losses.append(norm_loss)
+            results.append({
+                "transcript": cand_text,
+                "ctc_loss": round(loss_val, 2),
+                "target_len": target_len,
+                "norm_loss": round(norm_loss, 4),
+            })
+
+        # Length-normalized negative CTC loss normalized into [0, 1] relative to best candidate:
+        # S_Acoustic = exp(-(norm_loss - min_norm_loss)) = exp(-norm_loss) / max(exp(-norm_loss))
+        min_norm = min(norm_losses) if norm_losses else 0.0
+        for item, n_loss in zip(results, norm_losses):
+            s_acous = float(np.exp(-(n_loss - min_norm)))
+            item["acoustic_score"] = round(float(np.clip(s_acous, 0.0, 1.0)), 3)
+
+        return results
 
     def compute_semantic_score(self, candidate_text: str, all_candidates: List[str]) -> float:
         """Computes semantic coherence score using sentence-transformers embedding space."""
-        # Embed candidate and general natural English dialogue context
         context_prompts = [
             "A natural fluent spoken English sentence or daily request.",
             "Common everyday conversation, objects, and household activities.",
@@ -164,7 +255,7 @@ class DualPathShowcase:
                 "latency_estimate_ms": 380.0,
             }
 
-        # Step 2: Hard Path Rescoring
+        # Step 2: Hard Path Rescoring with Neural 1D-CNN Acoustic Head & Semantic LM
         all_texts = [c["transcript"] for c in candidates]
         logprobs = [c.get("asr_logprob", c.get("sequence_log_prob", 0.0)) for c in candidates]
 
@@ -172,13 +263,17 @@ class DualPathShowcase:
         exp_lp = np.exp(np.array(logprobs) - np.max(logprobs))
         asr_norm_scores = exp_lp / np.sum(exp_lp)
 
-        anchor_text = top1_hyp
+        # Real Neural Acoustic Inference via 1D-CNN CTC Loss
+        audio_path = case.get("filename", "")
+        acoustic_res = self.compute_acoustic_scores(audio_path, all_texts)
+        acous_norm_scores = [r["acoustic_score"] for r in acoustic_res]
+
         scored_candidates = []
 
         for idx, c in enumerate(candidates):
             text = c["transcript"]
             asr_score = float(asr_norm_scores[idx])
-            acous_score = self.compute_phonetic_score(text, anchor_text)
+            acous_score = float(acous_norm_scores[idx])
             sem_score = self.compute_semantic_score(text, all_texts)
 
             # Project TIDE Linear Fusion Formula
@@ -193,6 +288,8 @@ class DualPathShowcase:
                 "acoustic_norm": round(acous_score, 3),
                 "semantic_norm": round(sem_score, 3),
                 "fusion_score": round(fusion_score, 4),
+                "ctc_loss": acoustic_res[idx]["ctc_loss"],
+                "norm_loss": acoustic_res[idx]["norm_loss"],
             })
 
         # Sort candidates descending by fusion score
@@ -221,7 +318,7 @@ def print_showcase_header() -> None:
     """Renders ANSI banner for Professor showcase."""
     print(f"\n{BOLD}{CYAN}╔══════════════════════════════════════════════════════════════════════════════════╗{RESET}")
     print(f"{BOLD}{CYAN}║     PROJECT TIDE: LOCAL DUAL-PATH DYSARTHRIC RERANKING SHOWCASE DEMO     ║{RESET}")
-    print(f"{BOLD}{CYAN}║         Edge-First Architecture • Acoustic-Semantic Linear Fusion                ║{RESET}")
+    print(f"{BOLD}{CYAN}║       Neural 1D-CNN Acoustic Head • Acoustic-Semantic Linear Fusion              ║{RESET}")
     print(f"{BOLD}{CYAN}╚══════════════════════════════════════════════════════════════════════════════════╝{RESET}\n")
 
 
@@ -260,7 +357,7 @@ def display_case_report(result: Dict[str, Any]) -> None:
         return
 
     # Hard Path candidate breakdown table
-    print(f"\n  {MAGENTA}▶ Gate Verdict:{RESET} Uncertainty detected! Dispatched to 1D-CNN Acoustic & DistilBERT Semantic heads.")
+    print(f"\n  {MAGENTA}▶ Gate Verdict:{RESET} Uncertainty detected! Dispatched to Neural 1D-CNN Acoustic & MiniLM Semantic heads.")
     print(f"\n  {BOLD}{'Rank':<5} {'Candidate Hypothesis':<38} {'ASR (0.4)':<10} {'Acous (0.3)':<12} {'Sem (0.3)':<10} {'Fusion':<8}{RESET}")
     print(f"  {DIM}{'─'*5} {'─'*38} {'─'*10} {'─'*12} {'─'*10} {'─'*8}{RESET}")
 
@@ -296,6 +393,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Project TIDE Professor Showcase Demo")
     parser.add_argument("--threshold", type=float, default=0.65, help="Confidence gating threshold")
     parser.add_argument("--input", type=str, default=str(RESULTS_JSON_PATH), help="Path to baseline results JSON")
+    parser.add_argument("--checkpoint", type=str, default=str(DEFAULT_CHECKPOINT), help="Path to 1D-CNN checkpoint")
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -313,7 +411,7 @@ def main() -> None:
         sys.exit(1)
 
     print_showcase_header()
-    engine = DualPathShowcase(confidence_threshold=args.threshold)
+    engine = DualPathShowcase(confidence_threshold=args.threshold, checkpoint_path=args.checkpoint)
 
     fast_count = 0
     hard_count = 0
@@ -333,7 +431,7 @@ def main() -> None:
     print(f"{BOLD}{CYAN}SHOWCASE SUMMARY & DUAL-PATH METRICS:{RESET}")
     print(f"  • Total Evaluated Cases: {len(cases)}")
     print(f"  • Fast Path Dispatches:  {fast_count} ({fast_count/len(cases)*100:.1f}%) [Direct release, low latency]")
-    print(f"  • Hard Path Dispatches:  {hard_count} ({hard_count/len(cases)*100:.1f}%) [Deep phonetic + semantic fusion]")
+    print(f"  • Hard Path Dispatches:  {hard_count} ({hard_count/len(cases)*100:.1f}%) [Neural 1D-CNN + semantic fusion]")
     print(f"  • Top-1 Errors Rescued:  {rescued_count} [Acoustic & Semantic head recovery]")
     print(f"{BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}\n")
 
