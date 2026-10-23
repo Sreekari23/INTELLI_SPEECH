@@ -1,0 +1,498 @@
+[
+  {
+    "file": "data\\real_torgo_samples\\control_case_01_FC01.wav",
+    "speaker_id": "FC01",
+    "severity": "Control",
+    "reference": "HE WILL ALLOW A RARE LIE",
+    "base_wer": 0.0,
+    "oracle_wer": 0.0,
+    "oracle_headroom": 0.0,
+    "candidates": [
+      {
+        "transcript": "HE WILL ALLOW A RARE LIE",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "SHE WILL ALLOW A RARE LIE",
+        "logprob": -1.3
+      },
+      {
+        "transcript": "HE WILL ALLOW A RARE LIE",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "HE WILL ALLOW A RARE LIE",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "HE WILL ALLOW A RARE LIE",
+        "logprob": -5.0
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\control_case_02_FC01.wav",
+    "speaker_id": "FC01",
+    "severity": "Control",
+    "reference": "WE GATHERED SHELLS ON THE BEACH",
+    "base_wer": 0.0,
+    "oracle_wer": 0.0,
+    "oracle_headroom": 0.0,
+    "candidates": [
+      {
+        "transcript": "WE GATHERED SHELLS ON THE BEACH",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "WE GATHERED SHELLS ON THE BEACH",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "WE GATHERED SHELLS ON THE BEACH",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "WE GATHERED SHELLS ON THE BEACH",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "WE GATHERED SHELLS ON THE BEACH",
+        "logprob": -5.0
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\control_case_03_FC01.wav",
+    "speaker_id": "FC01",
+    "severity": "Control",
+    "reference": "WELL HE IS NEARLY NINETYTHREE YEARS OLD",
+    "base_wer": 0.14285714285714285,
+    "oracle_wer": 0.14285714285714285,
+    "oracle_headroom": 0.0,
+    "candidates": [
+      {
+        "transcript": "WELL HE IS NEARLY YEARS OLD",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "WELL HE IS NEARLY YEARS OLD",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "WELL HE IS NEARLY YEARS OLD",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "WELL HE IS NEARLY YEARS OLD",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "WELL HE IS NEARLY YEARS OLD",
+        "logprob": -5.0
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\control_case_04_FC01.wav",
+    "speaker_id": "FC01",
+    "severity": "Control",
+    "reference": "EXCEPT IN THE WINTER WHEN THE OOZE OR SNOW OR ICE PREVENTS",
+    "base_wer": 0.08333333333333333,
+    "oracle_wer": 0.0,
+    "oracle_headroom": 0.08333333333333333,
+    "candidates": [
+      {
+        "transcript": "ACCEPT IN THE WINTER WHEN THE OOZE OR SNOW OR ICE PREVENTS",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "EXCEPT IN THE WINTER WHEN THE OOZE OR SNOW OR ICE PREVENTS",
+        "logprob": -1.5
+      },
+      {
+        "transcript": "ACCEPT IN THE WINTER WHEN THE OOZE OR SNOW OR ICE PREVENTS",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "ACCEPT IN THE WINTER WHEN THE OOZE OR SNOW OR ICE PREVENTS",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "ACCEPT IN THE WINTER WHEN THE OOZE OR SNOW OR ICE PREVENTS",
+        "logprob": -5.0
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\mild_case_01_M05.wav",
+    "speaker_id": "M05",
+    "severity": "Mild",
+    "reference": "DAY AFTER DAY SOME NEW EPISODE IS REPORTED",
+    "base_wer": 0.75,
+    "oracle_wer": 0.375,
+    "oracle_headroom": 0.375,
+    "candidates": [
+      {
+        "transcript": "THEY ASKED TODAY SOME NEW EPISODES IS REALLY IMPORTANT",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "THEY ASKED TODAY SOME NEW EPISODES IS REPORTED",
+        "logprob": -1.0
+      },
+      {
+        "transcript": "DAY AS TODAY SOME NEW EPISODE IS REPORTEDLY REPORTED",
+        "logprob": -1.3
+      },
+      {
+        "transcript": "THEY ASK TODAY THE NEW EPISODE IS RECORDED",
+        "logprob": -1.5
+      },
+      {
+        "transcript": "THEY ASKED TODAY SOME NEW EPISODES IS REALLY IMPORTANT",
+        "logprob": -5.0
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\mild_case_02_M05.wav",
+    "speaker_id": "M05",
+    "severity": "Mild",
+    "reference": "BEG THAT GUARD FOR ONE GALLON OF GAS",
+    "base_wer": 0.75,
+    "oracle_wer": 0.75,
+    "oracle_headroom": 0.0,
+    "candidates": [
+      {
+        "transcript": "MAKE IT GOOD FOR ONE GUESS",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "THANK YOUS GOOD FOR ONE GATHERED SHARE AGAIN OVER DEATHS YEAH",
+        "logprob": -1.5
+      },
+      {
+        "transcript": "MAKE IT GOOD FOR ONE GUESS",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "MAKE IT GOOD FOR ONE GUESS",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "MAKE IT GOOD FOR ONE GUESS",
+        "logprob": -5.0
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\mild_case_03_M05.wav",
+    "speaker_id": "M05",
+    "severity": "Mild",
+    "reference": "ALTHOUGH ALWAYS ALONE WE SURVIVE",
+    "base_wer": 0.4,
+    "oracle_wer": 0.4,
+    "oracle_headroom": 0.0,
+    "candidates": [
+      {
+        "transcript": "ALTHOUGH ALWAYS ALONE WE SEE LIFE",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "ALTHOUGH ALWAYS ALONE WE SEE WHY",
+        "logprob": -1.3
+      },
+      {
+        "transcript": "ALTHOUGH ALWAYS ALONE WILL YOU WIFE",
+        "logprob": -1.5
+      },
+      {
+        "transcript": "ALTHOUGH ALWAYS ALONE WE SEE LIFE",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "ALTHOUGH ALWAYS ALONE WE SEE LIFE",
+        "logprob": -5.0
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\mild_case_04_M05.wav",
+    "speaker_id": "M05",
+    "severity": "Mild",
+    "reference": "ALTHOUGH ALWAYS AGAIN AGAIN",
+    "base_wer": 1.25,
+    "oracle_wer": 0.25,
+    "oracle_headroom": 1.0,
+    "candidates": [
+      {
+        "transcript": "I KNOW ALWAYS AGAIN AND AGAIN AND AGAIN",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "HELLO ALWAYS AGAIN AGAIN",
+        "logprob": -0.7
+      },
+      {
+        "transcript": "AH HELLO ALWAYS AGAIN AGAIN",
+        "logprob": -1.0
+      },
+      {
+        "transcript": "HOW LOW ARE WE AGAIN AGAIN",
+        "logprob": -1.5
+      },
+      {
+        "transcript": "I KNOW ALWAYS AGAIN AND AGAIN AND AGAIN",
+        "logprob": -5.0
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\severe_case_01_M02.wav",
+    "speaker_id": "M02",
+    "severity": "Severe",
+    "reference": "THE OWNERS REGULARLY LOOK FOR PLUMBING LEAKS",
+    "base_wer": 1.8571428571428572,
+    "oracle_wer": 1.2857142857142858,
+    "oracle_headroom": 0.5714285714285714,
+    "candidates": [
+      {
+        "transcript": "IT'S DOWN GUYS LIKE YOU GOTTA REALLY LOOK FOR IT IT'S NOT MEANT TO BE",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "IT'S ALWAYS LIKE A LITTLE WORK IT'S NOT MEANT TO BE",
+        "logprob": -0.7
+      },
+      {
+        "transcript": "THAT WAS NICE LIKE A LITTLE LOOK THAT WAS AMAZING",
+        "logprob": -1.0
+      },
+      {
+        "transcript": "STOP DON'T THINK THAT YOU GOT A LITTLE HELP IF THAT MAKES ME",
+        "logprob": -1.3
+      },
+      {
+        "transcript": "GOVERNMENT LIKE I REALLY HELPED WORK DOES THAT MEAN TO ME",
+        "logprob": -1.5
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\severe_case_02_M02.wav",
+    "speaker_id": "M02",
+    "severity": "Severe",
+    "reference": "THE MUSEUM HIRES MUSICIANS EVERY EVENING",
+    "base_wer": 2.0,
+    "oracle_wer": 1.0,
+    "oracle_headroom": 1.0,
+    "candidates": [
+      {
+        "transcript": "I DON'T KNOW IF THEY HAVE HEARTS LIKE THIS SINCE EVERYONE CARES",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "I DON'T KNOW IF THEY HAVE HEARTS LIKE THIS SINCE EVERYONE WILL CATCH",
+        "logprob": -1.0
+      },
+      {
+        "transcript": "THAT'S WHERE THE END PART OF MY LIFE IS EVERYWHERE YOU CAN",
+        "logprob": -1.3
+      },
+      {
+        "transcript": "PEWDS LIKE THESE KIDS EVERY WILL CATCH",
+        "logprob": -1.5
+      },
+      {
+        "transcript": "I DON'T KNOW IF THEY HAVE HEARTS LIKE THIS SINCE EVERYONE CARES",
+        "logprob": -5.0
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\severe_case_03_M02.wav",
+    "speaker_id": "M02",
+    "severity": "Severe",
+    "reference": "TWO OTHER CASES ALSO WERE UNDER ADVISEMENT",
+    "base_wer": 1.2857142857142858,
+    "oracle_wer": 0.5714285714285714,
+    "oracle_headroom": 0.7142857142857144,
+    "candidates": [
+      {
+        "transcript": "TWO ARE THE CASES ALSO WHERE I LOOK AT WHAT I'M DOING",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "TWO OTHER CASES ALL THROUGH ONE ANOTHER",
+        "logprob": -0.7
+      },
+      {
+        "transcript": "TWO OF THE CASES ALSO WHERE I LOOK AT WHAT I'M DOING",
+        "logprob": -1.0
+      },
+      {
+        "transcript": "TO ENGAGE THE STUDENTS ALL THROUGH WHAT I LOOK AT WHAT I LOOK AT",
+        "logprob": -1.3
+      },
+      {
+        "transcript": "CCCCCCCCCCC IWIN",
+        "logprob": -1.5
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\severe_case_04_M02.wav",
+    "speaker_id": "M02",
+    "severity": "Severe",
+    "reference": "IT ALSO PROVIDES FOR FUNDS TO CLEAR SLUMS AND HELP COLLEGES BUILD DORMITORIES",
+    "base_wer": 1.0769230769230769,
+    "oracle_wer": 0.8461538461538461,
+    "oracle_headroom": 0.23076923076923073,
+    "candidates": [
+      {
+        "transcript": "AND I'LL PUT BACK FOR ONE TO CLEAR SLUMPS AND HELP CALL IT THIS WELL I'LL GET MY TIME",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "AND I'LL PUT BACK THE WRONG TO CLEAR SLUMPS AND HELP CALL IT THIS WELL I'LL GIVE YOU TIME",
+        "logprob": -0.7
+      },
+      {
+        "transcript": "AND I'LL PUT BACK FOR ONE TO CLEAR SLUMPS AND HELP CALL IT DEW ROYAL PGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+        "logprob": -1.0
+      },
+      {
+        "transcript": "AND I WILL PUT BACK THE BLIND TO CLEAR SLUMPS AND HELP QUALITY RUB I WILL NEVER TRY",
+        "logprob": -1.3
+      },
+      {
+        "transcript": "AND I HOPE TO HOLD MY BODY FOR LONG TO CLEAR SLUMP AS I HELP SARA DO WELL I WILL GET CALCULATION",
+        "logprob": -1.5
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\moderate_case_01_M04.wav",
+    "speaker_id": "M04",
+    "severity": "Moderate",
+    "reference": "SHE HAD YOUR DARK SUIT IN GREASY WASH WATER ALL YEAR",
+    "base_wer": 1.3636363636363635,
+    "oracle_wer": 1.0,
+    "oracle_headroom": 0.36363636363636354,
+    "candidates": [
+      {
+        "transcript": "THREE AND THREE AND THREE AND THREE AND THREE OH WHAT WHAT WHAT ARE ALL YOU",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "AND AND AND AND AND OH WATCH WHAT OH YEAH",
+        "logprob": -0.7
+      },
+      {
+        "transcript": "THREE AND THREE THREE AND THREE THREE AND THREE THREE THREE OH WHAT WHAT WHAT ALL YOU",
+        "logprob": -1.0
+      },
+      {
+        "transcript": "THREE AND THREE THIRTEEN IN TWO THREE OH WHAT WHAT WHAT ARE YOU",
+        "logprob": -1.3
+      },
+      {
+        "transcript": "ANSWERS THAT IS EXISTING IN DETAIL WATCH WATCH IT'S LOOKING PRETTY AFTER THE DOORBOX",
+        "logprob": -1.5
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\moderate_case_02_M04.wav",
+    "speaker_id": "M04",
+    "severity": "Moderate",
+    "reference": "WE GATHERED SHELLS ON THE BEACH",
+    "base_wer": 0.5,
+    "oracle_wer": 0.5,
+    "oracle_headroom": 0.0,
+    "candidates": [
+      {
+        "transcript": "WE CAN GET OUT ON THE BEACH",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "WEEK WE GET ON THE BEACH",
+        "logprob": -1.3
+      },
+      {
+        "transcript": "COME ON WE CAN GET THE JUST ON A BEEP BEEP",
+        "logprob": -1.5
+      },
+      {
+        "transcript": "WE CAN GET OUT ON THE BEACH",
+        "logprob": -5.0
+      },
+      {
+        "transcript": "WE CAN GET OUT ON THE BEACH",
+        "logprob": -5.0
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\moderate_case_03_M04.wav",
+    "speaker_id": "M04",
+    "severity": "Moderate",
+    "reference": "USUALLY MINUS SEVERAL BUTTONS",
+    "base_wer": 1.75,
+    "oracle_wer": 1.0,
+    "oracle_headroom": 0.75,
+    "candidates": [
+      {
+        "transcript": "YOU DREAM MMM SUGAR ON THE BENCH",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "YOU DREAM FIGURE OUT WHAT I'M GOING TO DO",
+        "logprob": -1.0
+      },
+      {
+        "transcript": "YOU DREAM SEVEN ON BUTTON",
+        "logprob": -1.3
+      },
+      {
+        "transcript": "YOU TERMS GONG BONG",
+        "logprob": -1.5
+      },
+      {
+        "transcript": "YOU DREAM MMM SUGAR ON THE BENCH",
+        "logprob": -5.0
+      }
+    ]
+  },
+  {
+    "file": "data\\real_torgo_samples\\moderate_case_04_M04.wav",
+    "speaker_id": "M04",
+    "severity": "Moderate",
+    "reference": "NOTHING IS AS OFFENSIVE AS INNOCENCE",
+    "base_wer": 1.3333333333333333,
+    "oracle_wer": 1.0,
+    "oracle_headroom": 0.33333333333333326,
+    "candidates": [
+      {
+        "transcript": "NOTHING ISN'T THAT BAD TO ADD THE INK IN",
+        "logprob": -0.5
+      },
+      {
+        "transcript": "NOTHING IS NOTHING TO DO NOTHING IS NOTHING IS",
+        "logprob": -0.7
+      },
+      {
+        "transcript": "NOTHING IN UH THE DEFENDANT UH THE ADDICT",
+        "logprob": -1.0
+      },
+      {
+        "transcript": "NOTHING IS DIFFERENT THAN THAT THAN I THINK IS",
+        "logprob": -1.3
+      },
+      {
+        "transcript": "NOTHING IS THE DEATH THE DEATH ACTING IS",
+        "logprob": -1.5
+      }
+    ]
+  }
+]

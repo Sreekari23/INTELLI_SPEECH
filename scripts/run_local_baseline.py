@@ -53,15 +53,6 @@ DEMO_CASES = [
         "filename": "control.wav",
         "reference": "GOOD MORNING HAVE A WONDERFUL DAY",
         "description": "Healthy non-dysarthric speaker. High acoustic clarity.",
-        "simulated_top1": "GOOD MORNING HAVE A WONDERFUL DAY",
-        "simulated_beam": [
-            ("GOOD MORNING HAVE A WONDERFUL DAY", -0.15),
-            ("GOOD MOANING HAVE A WONDERFUL DAY", -1.95),
-            ("GOOD MORNING HAVE A WONDER FULL DAY", -2.20),
-            ("GOOD MORNIN HAVE A WONDERFUL DAY", -2.60),
-            ("GOOD MORNING OF A WONDERFUL DAY", -2.90),
-        ],
-        "freq": 440.0,
         "duration": 2.5,
     },
     {
@@ -70,15 +61,6 @@ DEMO_CASES = [
         "filename": "mild.wav",
         "reference": "PLEASE OPEN THE BEDROOM WINDOW",
         "description": "Mild dysarthria with slight articulatory boundary softening.",
-        "simulated_top1": "PLEASE OPEN THE BEDROOM WINDOW",
-        "simulated_beam": [
-            ("PLEASE OPEN THE BEDROOM WINDOW", -0.45),
-            ("PLEASE HOPING THE BEDROOM WINDOW", -0.85),
-            ("PLEASE OPEN A BEDROOM WINDOW", -1.25),
-            ("PLEASE OPEN THE BED ROOM WINDOW", -1.60),
-            ("PLEASE OPEN DE BEDROOM WINDOW", -2.10),
-        ],
-        "freq": 350.0,
         "duration": 2.8,
     },
     {
@@ -87,15 +69,6 @@ DEMO_CASES = [
         "filename": "moderate.wav",
         "reference": "I WOULD LIKE A GLASS OF COLD WATER",
         "description": "Moderate dysarthria. Consonant omission: 'COLD' articulated as 'COAL'.",
-        "simulated_top1": "I WOULD LIKE A GLASS OF COAL WATER",
-        "simulated_beam": [
-            ("I WOULD LIKE A GLASS OF COAL WATER", -0.82),
-            ("I WOULD LIKE A GLASS OF COLD WATER", -0.98),
-            ("I WOULD LIKE A GLASS OF CALL WATER", -1.45),
-            ("I WOULD LIKE A GLASS OF CORE WATER", -1.90),
-            ("I WOOD LIKE A GLASS OF COAL WATER", -2.15),
-        ],
-        "freq": 280.0,
         "duration": 3.4,
     },
     {
@@ -104,15 +77,6 @@ DEMO_CASES = [
         "filename": "severe.wav",
         "reference": "THE QUICK DOG JUMPED OVER THE FENCE",
         "description": "Severe dysarthria. Vowel centralization: 'DOG' distorted toward 'DAG'.",
-        "simulated_top1": "THE QUICK DAG JUMPED OVER THE FENCE",
-        "simulated_beam": [
-            ("THE QUICK DAG JUMPED OVER THE FENCE", -1.15),
-            ("THE QUICK DOG JUMPED OVER THE FENCE", -1.28),
-            ("THE QUICK DUG JUMPED OVER THE FENCE", -1.65),
-            ("THE QUICK DOCK JUMPED OVER THE FENCE", -1.95),
-            ("THE QUICK DARK JUMPED OVER THE FENCE", -2.30),
-        ],
-        "freq": 220.0,
         "duration": 4.1,
     },
 ]
@@ -199,27 +163,7 @@ def run_baseline_inference() -> List[Dict[str, Any]]:
         top1_hyp = beam_res["top1_transcript"]
         conf_metrics = beam_res["confidence_metrics"]
 
-        # Ensure realistic showcase candidates are present for demonstration
-        if case.get("simulated_beam"):
-            # Use calibrated showcase beam showing exact clinical breakdown
-            cand_list = []
-            sim_beam = case["simulated_beam"]
-            scores = [score for _, score in sim_beam]
-            exp_scores = np.exp(np.array(scores) - np.max(scores))
-            probs = exp_scores / np.sum(exp_scores)
-            for idx, (transcript, score) in enumerate(sim_beam, start=1):
-                cand_list.append({
-                    "rank": idx,
-                    "transcript": transcript,
-                    "asr_logprob": round(float(score), 4),
-                })
-            candidates = cand_list
-            top1_hyp = cand_list[0]["transcript"]
-            conf_metrics = {
-                "p_norm_top1": round(float(probs[0]), 4),
-                "delta_margin": round(float(scores[0] - scores[1]), 4),
-            }
-
+        # Candidates come exclusively from real Whisper inference; no simulated overrides.
         case_entry = {
             "case_id": case_id,
             "severity": severity,

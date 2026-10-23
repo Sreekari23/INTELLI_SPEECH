@@ -511,30 +511,22 @@ def main() -> None:
     # 3. Initialize Dataset
     dataset = TORGOAcousticDataset(root_dir=data_dir, sample_rate=16000)
 
-    # If dataset has no files (e.g. initial dry run or unmounted dir), provide synthetic demo set
     if len(dataset) == 0:
-        print("\n[!] Notice: No audio files found in directory. Creating mock acoustic samples for trial run...")
-        mock_samples = []
-        for i in range(16):
-            # Synthetic 2-second spectrograms and target labels
-            m_time = np.random.randint(120, 250)
-            mock_mel = torch.randn(80, m_time)
-            mock_targets = torch.randint(1, NUM_PHONEMES, (np.random.randint(10, 25),), dtype=torch.long)
-            mock_samples.append((mock_mel, mock_targets))
-
-        train_data = mock_samples[:12]
-        val_data = mock_samples[12:]
-    else:
-        # 80/20 Train/Validation Split
-        total_len = len(dataset)
-        train_len = int(0.8 * total_len)
-        val_len = total_len - train_len
-        train_data, val_data = random_split(
-            dataset,
-            [train_len, val_len],
-            generator=torch.Generator().manual_seed(42)
+        raise RuntimeError(
+            f"No audio files found in dataset root: {data_dir}\n"
+            "Mock-data fallback removed for research integrity: training requires real TORGO audio."
         )
-        print(f"[OK] Split: {train_len} Training samples, {val_len} Validation samples.")
+
+    # 80/20 Train/Validation Split
+    total_len = len(dataset)
+    train_len = int(0.8 * total_len)
+    val_len = total_len - train_len
+    train_data, val_data = random_split(
+        dataset,
+        [train_len, val_len],
+        generator=torch.Generator().manual_seed(42)
+    )
+    print(f"[OK] Split: {train_len} Training samples, {val_len} Validation samples.")
 
     # 4. DataLoaders
     batch_size = 16 if device.type == "cuda" else 4

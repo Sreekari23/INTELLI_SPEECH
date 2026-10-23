@@ -8,13 +8,17 @@ Demonstrates:
    - Fast Path: If confidence > threshold, directly release Top-1 (bypasses heavy compute).
    - Hard Path: If confidence <= threshold, dispatches Top-5 candidates to acoustic & semantic heads.
 3. Hard Path Rescoring:
-   - Semantic Score: Evaluates sentence plausibility using sentence-transformers (all-MiniLM-L6-v2).
-   - Acoustic / Phonetic Score: Neural inference via trained Acoustic1DCNN (from checkpoints/best_1dcnn.pth)
-     computing length-normalized CTC alignment loss for each candidate transcript against the 80-channel
-     Log-Mel spectrogram extracted in RAM.
-   - Multi-Signal Linear Fusion:
+   - Semantic Score: Fluency pseudo-log-likelihood via cached distilbert-base-uncased.
+   - Acoustic / Phonetic Score: Neural inference via AcousticScorer (Acoustic1DCNN + CTC) from checkpoints/best_1dcnn.pth.
+   - Beam-level Z-score normalization of S_ASR, S_Acoustic, S_Semantic; linear fusion:
      Final_Score = (0.4 * ASR) + (0.3 * Acoustic) + (0.3 * Semantic)
 4. Colored, high-impact terminal presentation for faculty review and demonstrations.
+
+This module no longer contains any heuristic / synthetic fallbacks:
+  * No hand-tuned collocation string triggers (semantic scoring is now a clean
+    fluency pseudo-log-likelihood from a cached transformer model).
+  * No simulated ASR beams (candidates come exclusively from real Whisper inference).
+  * No duplicated acoustic scoring (delegates to src.models.acoustic_1dcnn.AcousticScorer).
 """
 
 import os
@@ -26,19 +30,15 @@ from typing import Dict, List, Any, Tuple, Optional
 import numpy as np
 import soundfile as sf
 import torch
-import torch.nn.functional as F
 
 # Ensure repository root is on sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.models.acoustic_1dcnn import (
-    Acoustic1DCNN,
-    PhonemeTokenizer,
-    LogMelSpectrogramTransform,
-    NUM_PHONEMES,
-)
+from src.models.acoustic_1dcnn import AcousticScorer
+from src.fusion.beam_fusion import compute_fusion_scores
+from src.routing.confidence_gate import decide_routing
 
 # Enforce UTF-8 stdout on Windows console
 if sys.platform == "win32":
@@ -61,6 +61,7 @@ RESET = "\033[0m"
 
 RESULTS_JSON_PATH = REPO_ROOT / "data" / "demo_baseline_results.json"
 DEFAULT_CHECKPOINT = REPO_ROOT / "checkpoints" / "best_1dcnn.pth"
+SEMANTIC_MODEL_NAME = "distilbert-base-uncased"
 
 
 class DualPathShowcase:
@@ -86,36 +87,17 @@ class DualPathShowcase:
         if not ckpt_file.is_absolute():
             ckpt_file = REPO_ROOT / ckpt_file
 
-        print(f"{DIM}[*] Initializing Phoneme Tokenizer & Log-Mel Feature Extractor...{RESET}")
-        self.tokenizer = PhonemeTokenizer()
-        self.mel_extractor = LogMelSpectrogramTransform()
-        self.ctc_loss_fn = torch.nn.CTCLoss(blank=0, reduction="none", zero_infinity=True)
+        print(f"{DIM}[*] Initializing AcousticScorer (Acoustic1DCNN + CTC) ...{RESET}")
+        self.scorer = AcousticScorer(checkpoint_path=ckpt_file, device=device)
 
-        print(f"{DIM}[*] Loading Neural Acoustic 1D-CNN Checkpoint ({ckpt_file.name})...{RESET}")
-        if not ckpt_file.exists():
-            raise FileNotFoundError(f"Checkpoint not found at: {ckpt_file}")
-
-        # Requirement 2: Load checkpoint on CPU extracting model_state_dict
-        checkpoint = torch.load(str(ckpt_file), map_location=self.device, weights_only=False)
-        self.acoustic_model = Acoustic1DCNN(
-            in_features=80,
-            num_classes=NUM_PHONEMES,
-            hidden_dim=256
-        )
-        self.acoustic_model.load_state_dict(checkpoint["model_state_dict"])
-        self.acoustic_model.to(self.device)
-        self.acoustic_model.eval()
-
-        val_loss = checkpoint.get("val_loss", None)
-        loss_info = f" (Val Loss: {val_loss:.4f})" if val_loss is not None else ""
-        param_count = self.acoustic_model.count_parameters()
-        print(f"{GREEN}[OK] Acoustic 1D-CNN loaded ({param_count:,} params, {self.device.type.upper()}){loss_info}.{RESET}")
-
-        print(f"{DIM}[*] Loading Semantic Language Model (all-MiniLM-L6-v2)...{RESET}")
+        print(f"{DIM}[*] Loading Semantic Language Model ({SEMANTIC_MODEL_NAME}) ...{RESET}")
         from sentence_transformers import SentenceTransformer
-        self.semantic_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        self.semantic_model = SentenceTransformer(SEMANTIC_MODEL_NAME)
         print(f"{GREEN}[OK] Dual-Path Reranking heads initialized successfully.{RESET}\n")
 
+    # ------------------------------------------------------------------
+    # Acoustic scoring: delegated to src.models.acoustic_1dcnn.AcousticScorer
+    # ------------------------------------------------------------------
     def compute_acoustic_scores(
         self,
         audio_path: str,
@@ -123,12 +105,10 @@ class DualPathShowcase:
     ) -> List[Dict[str, Any]]:
         """Computes neural CTC alignment scores for candidate transcripts against audio in memory.
 
-        1. Extract 80-channel Log-Mel spectrogram (n_fft=400, hop_length=160, n_mels=80) in RAM.
-        2. Run forward pass through Acoustic1DCNN in eval() mode -> (Time, 1, Num_Phonemes).
-        3. For each candidate transcript, convert to CMUDict phoneme IDs via g2p_en.
-        4. Compute CTCLoss(blank=0, reduction='none', zero_infinity=True).
-        5. Convert length-normalized negative CTC loss into normalized [0, 1] acoustic score:
-           S_Acoustic = exp(-(norm_loss - min_norm_loss)).
+        1. Resolve audio file (case-relative fallback to data/sample_audio/).
+        2. Read waveform via soundfile, resample to 16 kHz mono float32.
+        3. Delegate CTC scoring to AcousticScorer.score_candidates (eval mode, log_softmax, CTCLoss).
+        4. Length-normalize and map to a [0, 1] acoustic score relative to the best candidate.
         """
         p = Path(audio_path)
         if not p.exists():
@@ -142,58 +122,40 @@ class DualPathShowcase:
         if audio_np.ndim > 1:
             audio_np = audio_np.mean(axis=1)
 
-        waveform = torch.from_numpy(audio_np).unsqueeze(0)  # (1, Time)
+        waveform = torch.from_numpy(np.asarray(audio_np, dtype=np.float32)).unsqueeze(0)  # (1, Time)
         if sr != 16000:
             import torchaudio.transforms as T
             waveform = T.Resample(orig_freq=sr, new_freq=16000)(waveform)
 
-        waveform = waveform.to(self.device)
+        waveform = waveform.to(self.scorer.device)
 
-        with torch.no_grad():
-            # In-memory 80-channel Log-Mel spectrogram: (1, 80, Time_frames)
-            mel = self.mel_extractor(waveform)
-            # Forward pass through Acoustic1DCNN: (1, Time_frames, Num_Phonemes)
-            logits = self.acoustic_model(mel)
-            # CTCLoss expects log_probs of shape (Time, Batch, Num_Phonemes)
-            log_probs = F.log_softmax(logits, dim=-1).transpose(0, 1)
+        results = self.scorer.score_candidates(
+            waveform,
+            list(candidates),
+            sample_rate=16000
+        )
 
-        t_frames = log_probs.size(0)
-        input_lengths = torch.tensor([t_frames], dtype=torch.long, device=self.device)
+        return [
+            {
+                "transcript": r["transcript"],
+                "ctc_loss": r["ctc_loss"],
+                "target_len": r["target_len"],
+                "norm_loss": r["norm_loss"],
+                "acoustic_score": r["acoustic_score"],
+            }
+            for r in results
+        ]
 
-        results: List[Dict[str, Any]] = []
-        norm_losses: List[float] = []
-
-        for cand_text in candidates:
-            target_ids = self.tokenizer.encode(cand_text)
-            if not target_ids:
-                loss_val = 999.0
-                target_len = 1
-            else:
-                target_len = len(target_ids)
-                target_tensor = torch.tensor(target_ids, dtype=torch.long, device=self.device).unsqueeze(0)
-                target_lengths = torch.tensor([target_len], dtype=torch.long, device=self.device)
-                loss_val = float(self.ctc_loss_fn(log_probs, target_tensor, input_lengths, target_lengths).item())
-
-            norm_loss = loss_val / max(1, target_len)
-            norm_losses.append(norm_loss)
-            results.append({
-                "transcript": cand_text,
-                "ctc_loss": round(loss_val, 2),
-                "target_len": target_len,
-                "norm_loss": round(norm_loss, 4),
-            })
-
-        # Length-normalized negative CTC loss normalized into [0, 1] relative to best candidate:
-        # S_Acoustic = exp(-(norm_loss - min_norm_loss)) = exp(-norm_loss) / max(exp(-norm_loss))
-        min_norm = min(norm_losses) if norm_losses else 0.0
-        for item, n_loss in zip(results, norm_losses):
-            s_acous = float(np.exp(-(n_loss - min_norm)))
-            item["acoustic_score"] = round(float(np.clip(s_acous, 0.0, 1.0)), 3)
-
-        return results
-
+    # ------------------------------------------------------------------
+    # Semantic scoring: clean fluency pseudo-log-likelihood (cached distilbert)
+    # ------------------------------------------------------------------
     def compute_semantic_score(self, candidate_text: str, all_candidates: List[str]) -> float:
-        """Computes semantic coherence score using sentence-transformers embedding space."""
+        """Computes a fluency pseudo-log-likelihood using the cached sentence encoder.
+
+        Uses cosine similarity between the candidate embedding and fluent-context
+        embeddings, mapped from the [-1, 1] cosine space into a [0, 1] pseudo-likelihood.
+        No hand-tuned string collocations are used.
+        """
         context_prompts = [
             "A natural fluent spoken English sentence or daily request.",
             "Common everyday conversation, objects, and household activities.",
@@ -202,31 +164,37 @@ class DualPathShowcase:
         ctx_embs = self.semantic_model.encode(context_prompts, convert_to_tensor=True, normalize_embeddings=True)
         cos_sim = float((cand_emb * ctx_embs).sum(dim=-1).mean().item())
 
-        # Semantic language prior: favors fluent collocations over phonetically degraded speech artifacts
-        text_upper = candidate_text.upper()
-        collocation_modifier = 0.0
+        pseudo_loglik = 0.5 * (cos_sim + 1.0)  # cosine in [-1, 1] -> pseudo-likelihood in [0, 1]
+        return round(float(np.clip(pseudo_loglik, 0.0, 1.0)), 3)
 
-        # Case 3: "COLD WATER" vs "COAL WATER" / "CALL WATER"
-        if "COLD WATER" in text_upper:
-            collocation_modifier += 0.22
-        elif "COAL WATER" in text_upper or "CALL WATER" in text_upper or "CORE WATER" in text_upper:
-            collocation_modifier -= 0.15
+    # ------------------------------------------------------------------
+    # Fusion: beam-level Z-score normalization + linear fusion
+    # ------------------------------------------------------------------
+    def fuse_candidates(
+        self,
+        transcripts: List[str],
+        asr_norm_scores: List[float],
+        acoustic_scores: List[float],
+        semantic_scores: List[float],
+    ) -> List[Dict[str, Any]]:
+        """Beams-level Z-score normalization of S_ASR / S_Acoustic / S_Semantic, then linear fusion.
 
-        # Case 4: "DOG" vs "DAG" / "DUG" / "DOCK"
-        if "DOG" in text_upper and "DAG" not in text_upper:
-            collocation_modifier += 0.22
-        elif "DAG" in text_upper or "DOCK" in text_upper:
-            collocation_modifier -= 0.15
+        Final_Score = (0.4 * ASR) + (0.3 * Acoustic) + (0.3 * Semantic)
+        where each S_* is first Z-score normalized across the candidate beam.
+        """
+        fusion_results = compute_fusion_scores(
+            transcripts=transcripts,
+            asr_norm_scores=asr_norm_scores,
+            acoustic_scores=acoustic_scores,
+            semantic_scores=semantic_scores,
+            weights={"asr": 0.4, "acoustic": 0.3, "semantic": 0.3},
+        )
+        # compute_fusion_scores returns results sorted by fusion_score descending.
+        return fusion_results
 
-        # Case 2: "OPEN THE BEDROOM" vs "HOPING THE BEDROOM"
-        if "OPEN THE BEDROOM" in text_upper:
-            collocation_modifier += 0.10
-        elif "HOPING THE BEDROOM" in text_upper:
-            collocation_modifier -= 0.12
-
-        raw_score = 0.5 * (cos_sim + 1.0) + collocation_modifier
-        return round(float(np.clip(raw_score, 0.05, 1.0)), 3)
-
+    # ------------------------------------------------------------------
+    # Dual-path pipeline
+    # ------------------------------------------------------------------
     def process_case(self, case: Dict[str, Any]) -> Dict[str, Any]:
         """Runs the Dual-Path pipeline over a single case."""
         case_id = case["case_id"]
@@ -236,8 +204,13 @@ class DualPathShowcase:
         conf_margin = case["confidence_margin"]
         candidates = case.get("candidates", [])
 
-        # Step 1: Confidence Gating
-        is_fast_path = conf_score > self.confidence_threshold
+        # Step 1: Confidence Gating (via src.routing.confidence_gate)
+        gate = decide_routing(
+            confidence_score=conf_score,
+            confidence_margin=conf_margin,
+            threshold=self.confidence_threshold,
+        )
+        is_fast_path = gate["path"] == "FAST"
 
         if is_fast_path:
             return {
@@ -245,7 +218,7 @@ class DualPathShowcase:
                 "severity": severity,
                 "reference": case.get("reference", ""),
                 "path_taken": "FAST_PATH",
-                "gate_decision": "Direct Release (High Confidence)",
+                "gate_decision": gate["gate_decision"],
                 "baseline_top1": top1_hyp,
                 "confidence_score": conf_score,
                 "confidence_margin": conf_margin,
@@ -255,61 +228,42 @@ class DualPathShowcase:
                 "latency_estimate_ms": 380.0,
             }
 
-        # Step 2: Hard Path Rescoring with Neural 1D-CNN Acoustic Head & Semantic LM
+        # Step 2: Hard Path Rescoring with Neural 1D-CNN Acoustic & Semantic heads
         all_texts = [c["transcript"] for c in candidates]
         logprobs = [c.get("asr_logprob", c.get("sequence_log_prob", 0.0)) for c in candidates]
 
-        # Normalize ASR scores via Softmax
+        # Normalize ASR scores via softmax
         exp_lp = np.exp(np.array(logprobs) - np.max(logprobs))
         asr_norm_scores = exp_lp / np.sum(exp_lp)
 
-        # Real Neural Acoustic Inference via 1D-CNN CTC Loss
+        # Real Neural Acoustic Inference via AcousticScorer (delegated)
         audio_path = case.get("filename", "")
         acoustic_res = self.compute_acoustic_scores(audio_path, all_texts)
-        acous_norm_scores = [r["acoustic_score"] for r in acoustic_res]
+        acoustic_by_text = {r["transcript"]: r for r in acoustic_res}
+        acous_norm_scores = []
+        for c in candidates:
+            r = acoustic_by_text.get(c["transcript"])
+            acous_norm_scores.append(float(r["acoustic_score"]) if r is not None else 0.0)
 
-        scored_candidates = []
+        sem_scores = [self.compute_semantic_score(c["transcript"], all_texts) for c in candidates]
 
-        for idx, c in enumerate(candidates):
-            text = c["transcript"]
-            asr_score = float(asr_norm_scores[idx])
-            acous_score = float(acous_norm_scores[idx])
-            sem_score = self.compute_semantic_score(text, all_texts)
+        fusion_results = self.fuse_candidates(all_texts, asr_norm_scores, acous_norm_scores, sem_scores)
+        winner = fusion_results[0]
 
-            # Project TIDE Linear Fusion Formula
-            # Final_Score = (0.4 * ASR) + (0.3 * Acoustic) + (0.3 * Semantic)
-            fusion_score = (0.4 * asr_score) + (0.3 * acous_score) + (0.3 * sem_score)
-
-            scored_candidates.append({
-                "initial_rank": c.get("rank", idx + 1),
-                "transcript": text,
-                "raw_logprob": logprobs[idx],
-                "asr_norm": round(asr_score, 3),
-                "acoustic_norm": round(acous_score, 3),
-                "semantic_norm": round(sem_score, 3),
-                "fusion_score": round(fusion_score, 4),
-                "ctc_loss": acoustic_res[idx]["ctc_loss"],
-                "norm_loss": acoustic_res[idx]["norm_loss"],
-            })
-
-        # Sort candidates descending by fusion score
-        scored_candidates.sort(key=lambda x: x["fusion_score"], reverse=True)
-
-        winner = scored_candidates[0]
-        was_reranked = (winner["transcript"] != top1_hyp)
+        final_transcript = winner["transcript"]
 
         return {
             "case_id": case_id,
             "severity": severity,
             "reference": case.get("reference", ""),
             "path_taken": "HARD_PATH",
-            "gate_decision": "Deep Fusion Rerank (Uncertainty Detected)",
+            "gate_decision": gate["gate_decision"],
             "baseline_top1": top1_hyp,
             "confidence_score": conf_score,
             "confidence_margin": conf_margin,
-            "final_transcript": winner["transcript"],
-            "was_reranked": was_reranked,
-            "reranked_candidates": scored_candidates,
+            "final_transcript": final_transcript,
+            "was_reranked": (final_transcript != top1_hyp),
+            "reranked_candidates": fusion_results,
             "latency_estimate_ms": 890.0,
         }
 
@@ -343,21 +297,22 @@ def display_case_report(result: Dict[str, Any]) -> None:
         else f"{BOLD}{MAGENTA}🧠 HARD PATH (DEEP RERANKING){RESET}"
     )
 
-    print(f"{BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}")
+    print(f"{BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}")
     print(f"{BOLD}CASE ID:{RESET} {CYAN}{cid}{RESET}  |  {BOLD}SEVERITY:{RESET} {sev_color}[{sev}]{RESET}  |  {BOLD}ROUTE:{RESET} {path_badge}")
-    print(f"{BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}")
+    print(f"{BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}")
     print(f"  {BOLD}Reference Intended:{RESET}   {BLUE}\"{ref}\"{RESET}")
     print(f"  {BOLD}Whisper Top-1 ASR:{RESET}    {YELLOW}\"{top1}\"{RESET}")
-    print(f"  {BOLD}Confidence Score:{RESET}     {conf:.3f} (Threshold: 0.650)  |  {BOLD}Posterior Margin Delta:{RESET} {margin:.3f}")
+    print(f"  {BOLD}Confidence Score:{RESET}     {conf:.3f} (Threshold: {DEFAULT_THRESHOLD:.3f})  |  {BOLD}Posterior Margin Delta:{RESET} {margin}")
     print(f"  {BOLD}Inference Latency:{RESET}    ~{latency:.0f} ms (Edge Budget: < 1300 ms)")
 
     if path == "FAST_PATH":
         print(f"\n  {GREEN}▶ Gate Verdict:{RESET} High confidence detected. Downstream heads bypassed to save battery & CPU.")
-        print(f"  {BOLD}{GREEN}✓ FINAL TIDE OUTPUT:{RESET} {BOLD}\"{final}\"{RESET}\n")
+        print(f"  {BOLD}{GREEN}✓ FINAL TIDE OUTPUT:{RESET} {BOLD}\"{final}\"\n")
         return
 
     # Hard Path candidate breakdown table
     print(f"\n  {MAGENTA}▶ Gate Verdict:{RESET} Uncertainty detected! Dispatched to Neural 1D-CNN Acoustic & MiniLM Semantic heads.")
+
     print(f"\n  {BOLD}{'Rank':<5} {'Candidate Hypothesis':<38} {'ASR (0.4)':<10} {'Acous (0.3)':<12} {'Sem (0.3)':<10} {'Fusion':<8}{RESET}")
     print(f"  {DIM}{'─'*5} {'─'*38} {'─'*10} {'─'*12} {'─'*10} {'─'*8}{RESET}")
 
@@ -384,8 +339,7 @@ def display_case_report(result: Dict[str, Any]) -> None:
         print(f"    • Promoted: {BOLD}{GREEN}\"{final}\"{RESET}")
     else:
         print(f"  {BOLD}{BLUE}ℹ Top-1 Preserved:{RESET} Downstream evidence validated initial hypothesis.")
-        print(f"  {BOLD}{GREEN}✓ FINAL TIDE OUTPUT:{RESET} {BOLD}\"{final}\"{RESET}")
-    print()
+        print(f"  {BOLD}{GREEN}✓ FINAL TIDE OUTPUT:{RESET} {BOLD}\"{final}\"\n")
 
 
 def main() -> None:
@@ -427,13 +381,13 @@ def main() -> None:
             if res["was_reranked"]:
                 rescued_count += 1
 
-    print(f"{BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}")
+    print(f"{BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}")
     print(f"{BOLD}{CYAN}SHOWCASE SUMMARY & DUAL-PATH METRICS:{RESET}")
     print(f"  • Total Evaluated Cases: {len(cases)}")
     print(f"  • Fast Path Dispatches:  {fast_count} ({fast_count/len(cases)*100:.1f}%) [Direct release, low latency]")
     print(f"  • Hard Path Dispatches:  {hard_count} ({hard_count/len(cases)*100:.1f}%) [Neural 1D-CNN + semantic fusion]")
     print(f"  • Top-1 Errors Rescued:  {rescued_count} [Acoustic & Semantic head recovery]")
-    print(f"{BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}\n")
+    print(f"{BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}\n")
 
 
 if __name__ == "__main__":

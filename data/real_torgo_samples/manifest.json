@@ -1,0 +1,146 @@
+[
+  {
+    "file": "data\\real_torgo_samples\\control_case_01_FC01.wav",
+    "filename": "control_case_01_FC01.wav",
+    "speaker_id": "FC01",
+    "severity": "Control",
+    "reference": "He will allow a rare lie",
+    "sample_rate": 16000,
+    "duration_sec": 4.34
+  },
+  {
+    "file": "data\\real_torgo_samples\\control_case_02_FC01.wav",
+    "filename": "control_case_02_FC01.wav",
+    "speaker_id": "FC01",
+    "severity": "Control",
+    "reference": "We gathered shells on the beach",
+    "sample_rate": 16000,
+    "duration_sec": 4.45
+  },
+  {
+    "file": "data\\real_torgo_samples\\control_case_03_FC01.wav",
+    "filename": "control_case_03_FC01.wav",
+    "speaker_id": "FC01",
+    "severity": "Control",
+    "reference": "Well he is nearly ninetythree years old",
+    "sample_rate": 16000,
+    "duration_sec": 5.54
+  },
+  {
+    "file": "data\\real_torgo_samples\\control_case_04_FC01.wav",
+    "filename": "control_case_04_FC01.wav",
+    "speaker_id": "FC01",
+    "severity": "Control",
+    "reference": "Except in the winter when the ooze or snow or ice prevents",
+    "sample_rate": 16000,
+    "duration_sec": 6.86
+  },
+  {
+    "file": "data\\real_torgo_samples\\mild_case_01_M05.wav",
+    "filename": "mild_case_01_M05.wav",
+    "speaker_id": "M05",
+    "severity": "Mild",
+    "reference": "Day after day some new episode is reported",
+    "sample_rate": 16000,
+    "duration_sec": 13.65
+  },
+  {
+    "file": "data\\real_torgo_samples\\mild_case_02_M05.wav",
+    "filename": "mild_case_02_M05.wav",
+    "speaker_id": "M05",
+    "severity": "Mild",
+    "reference": "Beg that guard for one gallon of gas",
+    "sample_rate": 16000,
+    "duration_sec": 9.63
+  },
+  {
+    "file": "data\\real_torgo_samples\\mild_case_03_M05.wav",
+    "filename": "mild_case_03_M05.wav",
+    "speaker_id": "M05",
+    "severity": "Mild",
+    "reference": "Although always alone we survive",
+    "sample_rate": 16000,
+    "duration_sec": 7.99
+  },
+  {
+    "file": "data\\real_torgo_samples\\mild_case_04_M05.wav",
+    "filename": "mild_case_04_M05.wav",
+    "speaker_id": "M05",
+    "severity": "Mild",
+    "reference": "Although always again again",
+    "sample_rate": 16000,
+    "duration_sec": 8.12
+  },
+  {
+    "file": "data\\real_torgo_samples\\severe_case_01_M02.wav",
+    "filename": "severe_case_01_M02.wav",
+    "speaker_id": "M02",
+    "severity": "Severe",
+    "reference": "The owners regularly look for plumbing leaks",
+    "sample_rate": 16000,
+    "duration_sec": 8.45
+  },
+  {
+    "file": "data\\real_torgo_samples\\severe_case_02_M02.wav",
+    "filename": "severe_case_02_M02.wav",
+    "speaker_id": "M02",
+    "severity": "Severe",
+    "reference": "The museum hires musicians every evening",
+    "sample_rate": 16000,
+    "duration_sec": 11.62
+  },
+  {
+    "file": "data\\real_torgo_samples\\severe_case_03_M02.wav",
+    "filename": "severe_case_03_M02.wav",
+    "speaker_id": "M02",
+    "severity": "Severe",
+    "reference": "Two other cases also were under advisement",
+    "sample_rate": 16000,
+    "duration_sec": 8.57
+  },
+  {
+    "file": "data\\real_torgo_samples\\severe_case_04_M02.wav",
+    "filename": "severe_case_04_M02.wav",
+    "speaker_id": "M02",
+    "severity": "Severe",
+    "reference": "It also provides for funds to clear slums and help colleges build dormitories",
+    "sample_rate": 16000,
+    "duration_sec": 17.48
+  },
+  {
+    "file": "data\\real_torgo_samples\\moderate_case_01_M04.wav",
+    "filename": "moderate_case_01_M04.wav",
+    "speaker_id": "M04",
+    "severity": "Moderate",
+    "reference": "She had your dark suit in greasy wash water all year",
+    "sample_rate": 16000,
+    "duration_sec": 12.82
+  },
+  {
+    "file": "data\\real_torgo_samples\\moderate_case_02_M04.wav",
+    "filename": "moderate_case_02_M04.wav",
+    "speaker_id": "M04",
+    "severity": "Moderate",
+    "reference": "We gathered shells on the beach",
+    "sample_rate": 16000,
+    "duration_sec": 6.44
+  },
+  {
+    "file": "data\\real_torgo_samples\\moderate_case_03_M04.wav",
+    "filename": "moderate_case_03_M04.wav",
+    "speaker_id": "M04",
+    "severity": "Moderate",
+    "reference": "usually minus several buttons",
+    "sample_rate": 16000,
+    "duration_sec": 6.84
+  },
+  {
+    "file": "data\\real_torgo_samples\\moderate_case_04_M04.wav",
+    "filename": "moderate_case_04_M04.wav",
+    "speaker_id": "M04",
+    "severity": "Moderate",
+    "reference": "Nothing is as offensive as innocence",
+    "sample_rate": 16000,
+    "duration_sec": 8.71
+  }
+]

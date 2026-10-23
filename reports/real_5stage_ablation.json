@@ -1,0 +1,14 @@
+{
+  "optimal_weights": {
+    "alpha": 0.4,
+    "beta": 0.3,
+    "gamma": 0.3
+  },
+  "overall_wer": {
+    "stage_A_baseline": 90.89,
+    "stage_B_acoustic": 90.93,
+    "stage_C_semantic": 89.85,
+    "stage_E_full_tide": 88.59,
+    "oracle_ceiling": 57.01
+  }
+}
