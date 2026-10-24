@@ -1,0 +1,85 @@
+{
+  "metadata_source": "src.data.audit_torgo.TORGO_SPEAKER_METADATA",
+  "baseline_checkpoint": {
+    "path": "C:\\Users\\tsrsr/Downloads/best_1dcnn.pth",
+    "sha256": "1b2a24d50569e6d8ccd50007a70897e1a4ac22107838fe44f308a3831a2b9557"
+  },
+  "target_checkpoint": {
+    "path": "checkpoints/best_1dcnn_v2.pth",
+    "sha256": "7d1b24afb14027b7bf62537533e218db748469a53461c0f24764585b33dcbce4"
+  },
+  "metric_definitions": {
+    "free_decode_per": "Unconstrained greedy CTC decoding edit distance: (S+D+I)/N_ref * 100.",
+    "pairwise_contrastive_win_rate": "Per-utterance % where length-normalized CTC loss L_CTC(x, y_true)/|y_true| < L_CTC(x, y_neg)/|y_neg|."
+  },
+  "speakers": {
+    "F04": {
+      "cohort": "Dysarthric",
+      "severity": "Moderate",
+      "utterances": 244,
+      "phase2_baseline_per": 95.69,
+      "v2_free_decode_per": 75.52,
+      "delta_per": -20.16,
+      "pairwise_contrastive_win_rate": 79.1
+    },
+    "FC01": {
+      "cohort": "Control",
+      "severity": "Control",
+      "utterances": 151,
+      "phase2_baseline_per": 97.14,
+      "v2_free_decode_per": 67.9,
+      "delta_per": -29.24,
+      "pairwise_contrastive_win_rate": 76.82
+    },
+    "M01": {
+      "cohort": "Dysarthric",
+      "severity": "Severe",
+      "utterances": 371,
+      "phase2_baseline_per": 98.95,
+      "v2_free_decode_per": 88.58,
+      "delta_per": -10.36,
+      "pairwise_contrastive_win_rate": 69.27
+    },
+    "M05": {
+      "cohort": "Dysarthric",
+      "severity": "Mild",
+      "utterances": 469,
+      "phase2_baseline_per": 99.29,
+      "v2_free_decode_per": 91.58,
+      "delta_per": -7.71,
+      "pairwise_contrastive_win_rate": 71.86
+    },
+    "MC01": {
+      "cohort": "Control",
+      "severity": "Control",
+      "utterances": 1076,
+      "phase2_baseline_per": 97.5,
+      "v2_free_decode_per": 65.97,
+      "delta_per": -31.53,
+      "pairwise_contrastive_win_rate": 76.39
+    }
+  },
+  "cohorts": {
+    "control": {
+      "utterances": 1227,
+      "phase2_baseline_per": 97.46,
+      "v2_free_decode_per": 66.21,
+      "delta_per": -31.25,
+      "pairwise_contrastive_win_rate": 76.45
+    },
+    "dysarthric": {
+      "utterances": 1084,
+      "phase2_baseline_per": 98.36,
+      "v2_free_decode_per": 86.94,
+      "delta_per": -11.42,
+      "pairwise_contrastive_win_rate": 72.6
+    },
+    "overall": {
+      "utterances": 2311,
+      "phase2_baseline_per": 97.88,
+      "v2_free_decode_per": 75.93,
+      "delta_per": -21.95,
+      "pairwise_contrastive_win_rate": 74.64
+    }
+  }
+}

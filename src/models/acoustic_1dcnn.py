@@ -101,16 +101,17 @@ class LogMelSpectrogramTransform(nn.Module):
     def forward(self, waveform: torch.Tensor) -> torch.Tensor:
         """Forward pass converting raw waveform (1, Time) or (Batch, 1, Time) to Log-Mel (Batch, 80, Frames)."""
         if waveform.dim() == 1:
-            waveform = waveform.unsqueeze(0).unsqueeze(0)
-        elif waveform.dim() == 2:
-            waveform = waveform.unsqueeze(0)  # (1, Channels, Time)
-        
-        # Ensure mono
-        if waveform.size(1) > 1:
-            waveform = waveform.mean(dim=1, keepdim=True)
+            waveform = waveform.unsqueeze(0)  # (1, Time)
+        elif waveform.dim() == 3:
+            # (Batch, Channels, Time) -> downmix channels to mono
+            if waveform.size(1) > 1:
+                waveform = waveform.mean(dim=1)
+            else:
+                waveform = waveform.squeeze(1)
+        # At this point, waveform is (Batch, Time)
 
-        # Compute mel spectrogram
-        mel = self.mel_transform(waveform).squeeze(1)  # (Batch, 80, Frames)
+        # Compute mel spectrogram: (Batch, n_mels, time_frames)
+        mel = self.mel_transform(waveform)
         log_mel = torch.log(torch.clamp(mel, min=1e-5))
 
         # Standardize normalization across frequency channels

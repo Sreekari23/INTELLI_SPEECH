@@ -145,8 +145,12 @@ def main() -> None:
     samples = select_real_samples()
     print(f"[EVAL] Total utterances: {len(samples)}\n")
 
-    asr = WhisperBaseline(model_name="openai/whisper-tiny.en", device="cpu")
-    scorer = AcousticScorer(checkpoint_path=str(REPO_ROOT / "checkpoints" / "best_1dcnn.pth"), device="cpu")
+    ckpt_path = (
+        REPO_ROOT / "checkpoints" / "best_1dcnn_v2.pth"
+        if (REPO_ROOT / "checkpoints" / "best_1dcnn_v2.pth").exists()
+        else REPO_ROOT / "checkpoints" / "best_1dcnn.pth"
+    )
+    scorer = AcousticScorer(checkpoint_path=str(ckpt_path), device="cpu")
     from sentence_transformers import SentenceTransformer
     sem_model = SentenceTransformer("distilbert-base-uncased")
 

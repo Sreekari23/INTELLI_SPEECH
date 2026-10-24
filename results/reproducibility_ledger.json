@@ -1,0 +1,43 @@
+{
+  "splits": {
+    "train": {
+      "manifest_path": "data/processed/train/manifest.json",
+      "sha256": "92d54bad99069ef1234b45ff92369895ccdb69f9072e2c961f08bd6dcff8a847",
+      "num_utterances": 3322,
+      "speakers": [
+        "F03",
+        "FC03",
+        "M02",
+        "MC03",
+        "MC04"
+      ]
+    },
+    "val": {
+      "manifest_path": "data/processed/val/manifest.json",
+      "sha256": "431de0df0f16a5e08e6c3ce2187e8b1902c5cfa57b7ada523e6ccd4ec159d4c3",
+      "num_utterances": 1809,
+      "speakers": [
+        "F01",
+        "FC02",
+        "M04",
+        "MC02"
+      ]
+    },
+    "test": {
+      "manifest_path": "data/processed/test/manifest.json",
+      "sha256": "a450a39db5fc32f773ece1098d1879f415f2cd4308910cf6cbdd7b314fff4c24",
+      "num_utterances": 2311,
+      "speakers": [
+        "F04",
+        "FC01",
+        "M01",
+        "M05",
+        "MC01"
+      ]
+    }
+  },
+  "checkpoints": {
+    "checkpoints/best_1dcnn.pth": "7d1b24afb14027b7bf62537533e218db748469a53461c0f24764585b33dcbce4",
+    "checkpoints/best_1dcnn_v2.pth": "7d1b24afb14027b7bf62537533e218db748469a53461c0f24764585b33dcbce4"
+  }
+}

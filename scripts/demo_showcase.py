@@ -60,7 +60,12 @@ DIM = "\033[2m"
 RESET = "\033[0m"
 
 RESULTS_JSON_PATH = REPO_ROOT / "data" / "demo_baseline_results.json"
-DEFAULT_CHECKPOINT = REPO_ROOT / "checkpoints" / "best_1dcnn.pth"
+DEFAULT_CHECKPOINT = (
+    REPO_ROOT / "checkpoints" / "best_1dcnn_v2.pth"
+    if (REPO_ROOT / "checkpoints" / "best_1dcnn_v2.pth").exists()
+    else REPO_ROOT / "checkpoints" / "best_1dcnn.pth"
+)
+DEFAULT_THRESHOLD = 0.65
 SEMANTIC_MODEL_NAME = "distilbert-base-uncased"
 
 

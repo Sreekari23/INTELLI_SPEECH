@@ -1,4 +1,4 @@
-﻿import sys, os
+import sys, os
 sys.path.insert(0, os.path.abspath("."))
 import json
 import time
@@ -49,8 +49,13 @@ def main():
         records = json.load(f)
 
     device = "cpu"
-    print("[*] Loading Neural 1D-CNN (checkpoints/best_1dcnn.pth)...")
-    ckpt = torch.load("checkpoints/best_1dcnn.pth", map_location=device, weights_only=False)
+    ckpt_path = (
+        Path("checkpoints/best_1dcnn_v2.pth")
+        if Path("checkpoints/best_1dcnn_v2.pth").exists()
+        else Path("checkpoints/best_1dcnn.pth")
+    )
+    print(f"[*] Loading Neural 1D-CNN ({ckpt_path})...")
+    ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
     acoustic_model = Acoustic1DCNN().to(device)
     acoustic_model.load_state_dict(ckpt["model_state_dict"])
     acoustic_model.eval()
